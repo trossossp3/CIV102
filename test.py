@@ -356,7 +356,7 @@ def testFail():
     """
     
     broken = False
-    p = 10
+    p = 1000
     while not broken:
         BMD = buildBMD(30/2 + 1060/2, p) #function to get the BMD using p in the 
         print("die")
@@ -367,14 +367,16 @@ def testFail():
         for i in range(L):
             if m_buckle[i] < BMD[i]:
                broken = True
-               print("BUCKLE FAIL at " + i + " at load" + p)
+               print("BUCKLE FAIL at " + str(i) + " at load" + str(p))
             elif m_tension[i] < BMD[i]:
                broken = True
-               print("Tension FAIL at " + i+ " at load" + p)
+               print("Tension FAIL at " + str(i)+ " at load" + str(p))
             elif m_compression[i] < BMD[i]:
                broken = True
-               print("COMPRESSION FAIL at " + i+ " at load" + p)
+               print("COMPRESSION FAIL at " + str(i)+ " at load" + str(p))
+        print("p is " + str(p))
         p+=1
+        
                
 def deflection(BMD):
     

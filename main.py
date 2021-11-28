@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 n = 1000
-L = 1280+1 #add one so u can do arr[1250]
+L = 1290+1 #add one so u can do arr[1250]
 x = 1
 E = 4000
 MU = 0.2
@@ -104,8 +104,8 @@ def printBMD():
 def ybar(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape):
     if(shape == 0):#shape = 0 during test bridge    
             area1 = widthtop * topthickness #top part of bridge
-            area2 = 10 * topthickness #tabs 10 is tab width
-            area3 = leftthickness * (height - 2*topthickness)
+            area2 = 10 * bottomthickness #tabs 10 is tab width
+            area3 = leftthickness * (height - topthickness)
             area4 = (widthbottom - 2*leftthickness) * bottomthickness
             d1 = (height-topthickness/2)
             d2 = (height - topthickness - topthickness/2)
@@ -114,6 +114,19 @@ def ybar(height, widthtop, widthbottom, topthickness, bottomthickness, rightthic
             y_bar = area1*d1 + 2*(area2*d2) + 2*(area3*d3) + area4*(d4)     
             y_bar = y_bar / (area1+2*area2+2*area3+area4)
             return y_bar
+
+    elif(shape ==1):
+        area1 = widthtop * topthickness #top part of bridge
+        area2 = 10 * bottomthickness #tabs 10 is tab width
+        area3 = leftthickness * (height - topthickness - bottomthickness)
+        area4 = (widthbottom - 2*leftthickness) * bottomthickness
+        d1 = (height-topthickness/2)
+        d2 = (height - topthickness - topthickness/2)
+        d3 = (height-2*topthickness)/2
+        d4 = bottomthickness/2
+        y_bar = area1*d1 + 2*(area2*d2) + 2*(area3*d3) + area4*(d4)     
+        y_bar = y_bar / (area1+2*area2+2*area3+area4)
+        return y_bar
 
 def I0(b, h):
     I0 = (b * h * h * h)/12
@@ -187,10 +200,11 @@ def get_properties():
     """
     user input to say what these properties are at the locations
     """
-    height = [75]*L
+    height = [75+35]*L
     widthTop = [100]*L
     widthBottom = [80]*L
-    topThickness = [1.27]*L
+    topThickness = [1.27*2]*L
+    #increases thickness
     bottomThickness = [1.27]*L
     rightThickness = [1.27]*L
     leftThickness = [1.27]*L
@@ -387,15 +401,23 @@ def MFailBuck(t):
     y_bar = geometric_properties()[1]
     Q = geometric_properties()[2]
     y_top = geometric_properties()[3]
-
+    height = get_properties()[0]
+    widthtop = get_properties()[1]
+    widthbottom = get_properties()[2]
+    topthickness = get_properties()[3]
+    bottomthickness = get_properties()[4]
+    rightthickness = get_properties()[5]
+    leftthickness = get_properties()[6]
     case = 1
     sigma = 0
     moments = []
     shape = get_properties()[7]
     for i in range(0, L):
         if shape[i] == 0: #the demo bridge
-            sigma1 = case1(i, t, 80)
-            sigma2 = case2(i,t,10)
+            sigma1 = case1(i, topthickness[i], 80)
+            
+            # sigma1 = case1(i, t, 80)
+            sigma2 = case2(i, t,10)
             sigma3 = case3(i, t, 32.02)
             # print(i)
             sigma = min(sigma1, sigma2, sigma3)
@@ -406,9 +428,7 @@ def MFailBuck(t):
         # moments.append(1)
     return(moments)    
 
-
-def case1(i,t, b):
-    
+def case1(i,t, b):    
     n1 = (4*math.pi**2 * E)
     n2 = (12*(1-MU**2))
     n3 = (t/b)**2
@@ -439,9 +459,9 @@ def testFail():
     broken3 = False
     broken4 = False
     broken5 = False
-    p = 360
+    p = 550
     # while not broken1 or not broken2 or not broken3:
-    while not broken3:
+    while not broken1 and not broken2 and not broken3 and not broken4 and not broken5:
         buildSFD(550, p)
         # printSFD()
 
@@ -450,8 +470,9 @@ def testFail():
         with open('your_file.txt', 'w') as f:
             for item in arr:
                 f.write("%s\n" % item)
-        # printSFD()
+        printSFD()
         buildBMD()
+        printBMD()
         m_buckle = MFailBuck(1.27)
         m_tension = M_failMatT(30)  
         m_compression = M_failMatC(6)
@@ -460,8 +481,8 @@ def testFail():
         for i in range(L-1):
             if abs(m_buckle[i]) < abs(bmd[i]):
                broken1 = True
-            #    print("BUCKLE FAIL at " + str(i) + " at load" + str(p))
-            #    print(bmd[i])
+               print("BUCKLE FAIL at " + str(i) + " at load" + str(p))
+               print(bmd[i])
             if abs(m_tension[i]) < abs(bmd[i]):
                broken2 = True
                print("Tension FAIL at " + str(i)+ " at load" + str(p))
@@ -473,11 +494,11 @@ def testFail():
             if abs(v_fails[i]) < abs(arr[i]):
                 # print(arr[i])
                 broken4 = True
-                # print("sheer failure at " + str(i) + " at load " + str(p) + " sheer fail value = " + str(arr[i]))
+                print("sheer failure at " + str(i) + " at load " + str(p) + " sheer fail value = " + str(arr[i]))
             if abs(v_bucks[i]) < abs(arr[i]):
-                # print(arr[i])
-                # broken5 = True
-                # print("sheer buckle failure at " + str(i) + " at load " + str(p) + " sheer fail value = " + str(arr[i]))
+                print(arr[i])
+                broken5 = True
+                print("sheer buckle failure at " + str(i) + " at load " + str(p) + " sheer fail value = " + str(arr[i]))
                 pass
         p+=1
 def testFailTrain():
@@ -489,7 +510,7 @@ def testFailTrain():
     broken5 = False
     p = 42
     # while not broken1 or not broken2 or not broken3:
-    while not broken1:
+    while not broken1 and not broken2 and not broken3 and not broken4 and not broken5:
         #for values at the right
         # buildSFD(372, p)
         # buildSFD(548,p)
@@ -499,20 +520,20 @@ def testFailTrain():
         # arr =buildSFD(1228,p)
 
 
-        #for values at center
+        # for values at center
         buildSFD(117, p)
         buildSFD(293,p)
         buildSFD(457, p)
         buildSFD(633,p)
         buildSFD(797, p)
         arr =buildSFD(973,p)
-        # print(arr[676])
+        print(arr[676])
         with open('your_file.txt', 'w') as f:
             for item in arr:
                 f.write("%s\n" % item)
-        printSFD()
+        # printSFD()
         buildBMD()
-        printBMD()
+        # printBMD()
         m_buckle = MFailBuck(1.27)
         m_tension = M_failMatT(30)  
         m_compression = M_failMatC(6)
@@ -580,6 +601,6 @@ if __name__ == "__main__":
     # buildBMD()
     # printBMD()
     # init()
-    # testFail()
-    testFailTrain()
+    testFail()
+    # testFailTrain()
 

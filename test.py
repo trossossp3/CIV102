@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 n = 1000
-L = 1250
+L = 1280
 x = 1
 E = 4000
 MU = 0.2
@@ -57,24 +57,34 @@ def printBMD(xP, P):
     plt.plot(buildBMD(xP, P))
     plt.show()    
 
-def ybar(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness):
-    numerator = widthtop*topthickness*(height - topthickness/2) + widthbottom*bottomthickness*(bottomthickness/2) + rightthickness*(height - topthickness - bottomthickness)*(bottomthickness + ((height - topthickness - bottomthickness)/2)) + leftthickness*(height - topthickness - bottomthickness)*(bottomthickness + ((height - topthickness - bottomthickness)/2))
-    sum_of_areas = widthtop*topthickness + widthbottom*bottomthickness + rightthickness*(height - topthickness - bottomthickness) + leftthickness*(height - topthickness - bottomthickness)
-    centroid = numerator / sum_of_areas
-    return centroid
+def ybar(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape):
+    if(shape == 0):#shape = 0 during test bridge    
+            area1 = widthtop * topthickness #top part of bridge
+            area2 = 10 * topthickness #tabs 10 is tab width
+            area3 = leftthickness * (height - 2*topthickness)
+            area4 = (widthbottom - 2*leftthickness)
+            y_bar = (area1*(height-topthickness/2)) + 2*(area2-(topthickness-topthickness/2)) + 2*(area3*((height-2*topthickness)/2)) + area4*(bottomthickness/2)
+            y_bar = y_bar / (area1+area2+area3+area4)
+
 
 def I0(b, h):
-    I0 = (b * h * h * h)/12
+    I0 = (b * h**3)/12
     return I0
 
-def second_moment_of_area(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness):
-    centroid = ybar(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness)
-    term1 = I0(widthtop, topthickness) + (widthtop * topthickness * ((height - (topthickness/2) - centroid)**2))
-    term2 = I0(rightthickness, height - topthickness - bottomthickness) + (rightthickness * (height - topthickness - bottomthickness) * ((bottomthickness + ((height - bottomthickness - topthickness)/2) - centroid)**2))
-    term3 = I0(leftthickness, height - topthickness - bottomthickness) + (leftthickness * (height - topthickness - bottomthickness) * ((bottomthickness + ((height - bottomthickness - topthickness)/2) - centroid)**2))
-    term4 = I0(widthbottom, bottomthickness) + (widthbottom * bottomthickness * (((bottomthickness/2) - centroid)**2))
-    second_moment_of_area = term1 + term2 + term3 + term4
-    return second_moment_of_area / (10**3)
+def second_moment_of_area(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape):
+    centroid = ybar(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape)
+    area1 = widthtop * topthickness #top part of bridge
+    area2 = 10 * topthickness #tabs 10 is tab width
+    area3 = leftthickness * (height - 2*topthickness)
+    area4 = (widthbottom - 2*leftthickness)
+
+
+    term1 = I0(widthtop, topthickness) + (area1 * ((height - (topthickness/2) - centroid)**2)) #top
+    term2 = I0(10, topthickness) + area2 * ((height - topthickness - topthickness/2 - centroid)**2) #tabs
+    term3 = I0(leftthickness, height - 2*topthickness) + area3 * (centroid- ((height-2*topthickness)/2)**2)
+    term4 = I0(widthbottom - 2*leftthickness, bottomthickness) + (area4 * (((bottomthickness/2) - centroid)**2))
+    second_moment_of_area = term1 + 2* term2 + 2*term3 + term4
+    return second_moment_of_area
 
 def first_moment_of_area(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness):
     
@@ -103,13 +113,13 @@ def get_properties():
     """
     user input to say what these properties are at the locations
     """
-    height = [1000]*L
+    height = [75]*L
     widthTop = [100]*L
-    widthBottom = [100]*L
-    topThickness = [100]*L
-    bottomThickness = [100]*L
-    rightThickness = [100]*L
-    leftThickness = [100]*L
+    widthBottom = [80]*L
+    topThickness = [1.27]*L
+    bottomThickness = [1.27]*L
+    rightThickness = [1.27]*L
+    leftThickness = [1.27]*L
     shape = [0] * L
 
     return  height, widthTop, widthBottom, topThickness, bottomThickness, rightThickness, leftThickness, shape
@@ -120,15 +130,15 @@ def geometric_properties():
     """
     returns I , y_bar, Q, yTop
     """
-    height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape= get_properties()
+    height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape = get_properties()
     y_bar = []
     I = []
     Q = []
     yTop = []
 
     for i in range(L):
-        y_bar.append(ybar(height[i], widthtop[i], widthbottom[i], topthickness[i], bottomthickness[i], rightthickness[i], leftthickness[i]))
-        I.append(second_moment_of_area(height[i], widthtop[i], widthbottom[i], topthickness[i], bottomthickness[i], rightthickness[i], leftthickness[i]))
+        y_bar.append(ybar(height[i], widthtop[i], widthbottom[i], topthickness[i], bottomthickness[i], rightthickness[i], leftthickness[i], shape[i]))
+        I.append(second_moment_of_area(height[i], widthtop[i], widthbottom[i], topthickness[i], bottomthickness[i], rightthickness[i], leftthickness[i], shape[i]))
         Q.append(first_moment_of_area(height[i], widthtop[i], widthbottom[i], topthickness[i], bottomthickness[i], rightthickness[i], leftthickness[i]))
         yTop.append(y_bar[i] - height[i])
     
@@ -277,9 +287,9 @@ def M_failMatC(sigC, BMD):
     moment_fail = []
     for i in range(L):
         if BMD[i] >0: #positive moment the max tension will be at the bottom
-            moment_fail.append(sigC * I[i]/y_bar[i]) #M = sigma*I / y
+            moment_fail.append(sigC * I[i]/y_top[i]) #M = sigma*I / y
         elif BMD[i] <0:
-            moment_fail.append(-1 * sigC * I[i] /y_top[i]) 
+            moment_fail.append(-1 * sigC * I[i] /y_bar[i]) 
         else:
             moment_fail.append(0)
     return moment_fail
@@ -356,14 +366,19 @@ def testFail():
     """
     
     broken = False
-    p = 1000
+    p = 100
     while not broken:
-        BMD = buildBMD(30/2 + 1060/2, p) #function to get the BMD using p in the 
+        printSFD(550 + 30/2, p)
+        printSFD(1250  + 30/2, p)
+        BMD = buildBMD(550, p) #function to get the BMD using p in the 
+        BMD = buildBMD(1250, p)
         print("die")
-        # printBMD(30/2 + 1060/2, p)
+        printBMD(550, p)
+        printBMD(1250, p)
         m_buckle = MFailBuck(BMD, 1.27)
         m_tension = M_failMatT(30, BMD)
         m_compression = M_failMatC(6, BMD)
+
         for i in range(L):
             if m_buckle[i] < BMD[i]:
                broken = True

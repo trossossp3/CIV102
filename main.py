@@ -1,17 +1,24 @@
 import math
-
-## Dumbass CIV102 Project Code ##
 import scipy.integrate as it
 import matplotlib.pyplot as plt
 import numpy as np
 
-n = 1000
-L = 1290+1 #add one so u can do arr[1250]
-x = 1
+"""
+Defining constants such as length
+
+"""
+L = 1290+1 #add one to lengh to make it possible to iterate to the 1290 index of an array
 E = 4000
 MU = 0.2
-supportAlocation = 30/2
 
+"""
+initialy define sfd as a 2-D array of length L
+an sfd array entry will be in the following form
+[values of the shear force, type of point IE pointload, support, nothing]
+in the array value 0 corresponds to no support or pointload at that point
+             value 1 corresponds to a support
+             value 2 corresponds to a pointload
+"""
 sfd = [[0.0, 0.0]]*L
 sfd = np.array(sfd)
 support_x = 15
@@ -19,11 +26,28 @@ support_x_right = 1075
 point_loads = []
 bmd = np.array([0.0]*L)
 
+"""
+sigmas arrays are to collect the indivsual buckling force in the webs, side flange, and mid flang
+"""
 sigmas1 = []
 sigmas2 = []
 sigmas3 = []
 
 def buildSFD(xP, P):
+    """
+    functions to construct SFD
+        
+        parameters::
+            xP(int): the position of the point load
+            P(int): value in N of the pointload
+        
+        functions adds inputed pointload to a global array of pointloads from there the reaction forces are calculated
+        the function then checks each point of the sfd array and if it is at a pointload it adds the corresponding reaction force
+            and if it at a pointload the correspnding value is substracted from the total
+        returns:
+            an array that includes only the value of the sheer force at each point in the bridge
+
+    """
     global sfd
     global point_loads
     temp = [P, xP]
@@ -69,6 +93,9 @@ def buildSFD(xP, P):
 
 
 def printSFD():
+    """
+    functions to display a matplot.lib graph of the SFD
+    """
     plt.title("Bridge SFD for P=617N, Pfail = 617N") 
     plt.xlabel("x (mm)") 
     plt.ylabel("shear force (N)") 
@@ -83,6 +110,11 @@ def printSFD():
 
 
 def buildBMD():
+    """
+    functions that builds the BMD using the sheer force values from the array SFD
+    the BMD is then calculated by using a function from the sciPy library cumtrapz
+    this function calculated the integral of a list using cumulative trapezoidal sums
+    """
     global bmd
     arr = []
     for i in range(len(sfd)):
@@ -92,6 +124,9 @@ def buildBMD():
 
 
 def printBMD():
+    """
+    functions to display BMD using Matplot.lib
+    """
     plt.title("Bridge BMD from P=617, PFail = 617") 
     plt.xlabel("x (mm)") 
     plt.ylabel("bending moment (Nmm)") 
@@ -106,6 +141,22 @@ def printBMD():
 
 
 def ybar(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape, tabThickness):
+    """
+    function to calculate the yBar of a crosssection
+
+        parameters:
+            height(int): height of the cross section
+            widthtop(int): width of the top member
+            widthbottom(int): width of bottom of the crosssection
+            topthickness(int): thickenss of top memebr
+            bottomthickness(int): thickness of bottom member
+            rightthickness(int): thickness of right memeber
+            leftthickness(int): thickness of left memebr
+            shape(int): which cross section is being used IE for different cross sections a different number is given
+            tabThicknes(int): thickness of the tabs
+        returns:
+            ybar(float): distance to the centroid 
+    """
     if(shape == 0):#shape = 0 during test bridge    
             area1 = widthtop * topthickness #top part of bridge
             area2 = 5 * tabThickness #tabs 10 is tab width
@@ -133,10 +184,33 @@ def ybar(height, widthtop, widthbottom, topthickness, bottomthickness, rightthic
         return y_bar
 
 def I0(b, h):
+    """
+    function to calculate the inital second moment of area
+        paramaeters
+            b(float): wifth
+            h(float): height
+        returns I0(double): second moment of area
+    """
     I0 = (b * h * h * h)/12
     return I0
 
 def second_moment_of_area(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape, tabThickness):
+    """
+    function to calculate the Second moment of area of a crosssection
+
+        parameters:
+            height(int): height of the cross section
+            widthtop(int): width of the top member
+            widthbottom(int): width of bottom of the crosssection
+            topthickness(int): thickenss of top memebr
+            bottomthickness(int): thickness of bottom member
+            rightthickness(int): thickness of right memeber
+            leftthickness(int): thickness of left memebr
+            shape(int): which cross section is being used IE for different cross sections a different number is given
+            tabThicknes(int): thickness of the tabs
+        returns:
+            second_moment_of_are(float): second_moment_of_area 
+    """
     centroid = ybar(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape, tabThickness)
     if shape == 0:
         area1 = widthtop * topthickness #top part of bridge
@@ -162,7 +236,22 @@ def second_moment_of_area(height, widthtop, widthbottom, topthickness, bottomthi
 
 
 def first_moment_of_area(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape, tabThickness):
-    
+    """
+    function to calculate the first moment of area of a crosssection
+
+        parameters:
+            height(int): height of the cross section
+            widthtop(int): width of the top member
+            widthbottom(int): width of bottom of the crosssection
+            topthickness(int): thickenss of top memebr
+            bottomthickness(int): thickness of bottom member
+            rightthickness(int): thickness of right memeber
+            leftthickness(int): thickness of left memebr
+            shape(int): which cross section is being used IE for different cross sections a different number is given
+            tabThicknes(int): thickness of the tabs
+        returns:
+            first_moment_of_area(float): first moment of area 
+    """
     centroid = ybar(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape, tabThickness)
     
     if shape == 0:
@@ -179,28 +268,55 @@ def first_moment_of_area(height, widthtop, widthbottom, topthickness, bottomthic
 
 def get_properties():
     """
-    user input to say what these properties are at the locations
+    function to set the sectional properties of the bridge
+    the properties are stored in arrays of length L asto be able to set the various properties at each point in the bridge
+
+        returns:
+            height(int): height of the cross section
+            widthtop(int): width of the top member
+            widthbottom(int): width of bottom of the crosssection
+            topthickness(int): thickenss of top memebr
+            bottomthickness(int): thickness of bottom member
+            rightthickness(int): thickness of right memeber
+            leftthickness(int): thickness of left memebr
+            shape(int): which cross section is being used IE for different cross sections a different number is given
+            tabThicknes(int): thickness of the tabs
     """
     height = [75+35]*L
     widthTop = [100]*L
     widthBottom = [80]*L
     topThickness = [1.27*2]*L
 
-    #increases thickness
-    bottomThickness = np.concatenate(([1.27]*520, [1.27*2]*50, [1.27]*570, [1.27*2]*(L-520-50-570)), axis = 0) #double bottom thickness between 545 - 555
-    rightThickness = np.concatenate(([1.27]*540, [1.27 * 2]*10, [1.27]*(L-540-10)), axis = 0) 
-    leftThickness = np.concatenate(([1.27]*540, [1.27 * 2]*10, [1.27]*(L-540-10)), axis = 0) 
-    # leftThickness = [1.27]*L
-    shape = [0] * L
+    
+    bottomThickness = np.concatenate(([1.27]*520, [1.27*2]*50, [1.27]*570, [1.27*2]*(L-520-50-570)), axis = 0) #double bottom thickness between 520 - 570 and 1140 - the end
+    rightThickness = np.concatenate(([1.27]*540, [1.27 * 2]*10, [1.27]*(L-540-10)), axis = 0) #double thickness between 540-550
+    leftThickness = np.concatenate(([1.27]*540, [1.27 * 2]*10, [1.27]*(L-540-10)), axis = 0) #double thickness between 540-550
+   
+    shape = [0] * L #similar crosssection through the entire length
     tabThickness = [1.27]*L
     return  height, widthTop, widthBottom, topThickness, bottomThickness, rightThickness, leftThickness, shape, tabThickness
    
 def y_top(y_bar, height):
+    """
+    calculates y_top
+        paramarers:
+            y_bar(float): centroid location
+            height(int): height of cross section
+        returns:
+            y_top(float): distance from centroid to top of crosssection
+    """
     return y_bar - height
 
 def geometric_properties():
     """
-    returns I , y_bar, Q, yTop
+    functions to generate lists of geometric properties
+    each properties is length L with each entry being the value at each point on the bridge
+
+    returns
+        I(list): second moment of area at each point on the bridge
+        y_bar(list): centroid locartion at each location on the bridge
+        Q(list): first moment of area at each location on the bridge
+        yTop(list): distance from centroid to top of crosssection at each point on the bridge
     """
     height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape, tabThickness= get_properties()
     y_bar = []
@@ -334,11 +450,10 @@ def M_failMatC(sigC):
     global L
     """
     calculate moment the moment the causes compression failure at each x
-     returns array of the moment required to break bridge at each location
-    sectional_properties array with I, Q, yBar, Ybot, Ytop
+        returns:
+        moment_fail(list): array of the moment required to break bridge at each location
+   
 
-    sigC = sigma compression
-    BMD 1-d array of the bending moments at each mm of the bridge
 
     """
     # change with right indices
@@ -359,16 +474,15 @@ def M_failMatC(sigC):
     return moment_fail
 
 def MFailBuck(t):
-    global E, MU
-
+    
     """
     calculated moment needed to break bridge due to buckling at every location along the bridge
 
-     sectional_properties array with I, Q, yBar, Ybot, Ytop
-        each indivisual properties should be an array with the value at each location along the bridge
-    
-        in sectional properties have an array with a value that describes the shape of the bridge so the corresponding correct cases can be used
-    global E and mu
+    parameters:
+        t(float): thickness 
+    returns:
+        moments(list): list of moments required to cause buckling failure at each point on the bridge
+        
 
     3 cases
         case 1 when two sides restained constant force k = 4
@@ -379,20 +493,14 @@ def MFailBuck(t):
         M = sigma * I /Y
         b= width
     """
+
+
     global sigmas1, sigmas2, sigmas3
-    #needed to change depending on sectional properties
+   
     I = geometric_properties()[0]
     y_bar = geometric_properties()[1]
-    Q = geometric_properties()[2]
     y_top = geometric_properties()[3]
-    height = get_properties()[0]
-    widthtop = get_properties()[1]
-    widthbottom = get_properties()[2]
     topthickness = get_properties()[3]
-    bottomthickness = get_properties()[4]
-    rightthickness = get_properties()[5]
-    leftthickness = get_properties()[6]
-    case = 1
     sigma = 0
     moments = []
     shape = get_properties()[7]
@@ -448,13 +556,13 @@ def MFailBuck(t):
                 sigmas3.append(0)
            
           
-            # print(i)
+            
             sigma = min(sigma1, sigma2, sigma3)
             # take min of potential sigmas calculated like if a memeber uses both case1 and 2
             n1 =  sigma*I[i] / y_top[i]
             n2 = sigma*I[i] / y_bar[i] 
-        moments.append(min(n1, n2)) #idk what Y to reference   
-        # moments.append(1)
+        moments.append(min(n1, n2))
+        
     return(moments)    
 
 def case1(i,t, b):    
@@ -477,7 +585,7 @@ def case3(i, t, b):
 def testFail():
     """
     increment p until the bridge breaks
-    if you want to change position through in another loop for position of P
+
 
     for every iteration of p
         compare the moment at each time and see if its less then the max
@@ -489,7 +597,7 @@ def testFail():
     broken4 = False
     broken5 = False
     p = 600
-    # while not broken1 or not broken2 or not broken3:
+   
     while not broken1 and not broken2 and not broken3 and not broken4 and not broken5:
         buildSFD(550, p)
         # printSFD()
@@ -501,8 +609,6 @@ def testFail():
                 f.write("%s\n" % item)
         
         buildBMD()
-        # printSFD()
-        # printBMD()
         m_buckle = MFailBuck(1.27)
         m_tension = M_failMatT(30)  
         m_compression = M_failMatC(6)
@@ -522,7 +628,7 @@ def testFail():
                print("COMPRESSION FAIL at " + str(i)+ " at load" + str(p))
                print(bmd[i])
             if abs(v_fails[i]) < abs(arr[i]):
-                # print(arr[i])
+                
                 broken4 = True
                 print("sheer failure at " + str(i) + " at load " + str(p) + " sheer fail value = " + str(arr[i]))
             if abs(v_bucks[i]) < abs(arr[i]):
@@ -532,7 +638,10 @@ def testFail():
                 pass
         p+=1
 def testFailTrain():
-     # global sfd
+    """
+    function to test failure load when the train is in the middle of the supports
+
+    """
     broken1 = False
     broken2 = False
     broken3 = False
@@ -557,18 +666,15 @@ def testFailTrain():
         buildSFD(633,p)
         buildSFD(797, p)
         arr =buildSFD(973,p)
-       
-        # with open('your_file.txt', 'w') as f:
-        #     for item in arr:
-        #         f.write("%s\n" % item)
-        # printSFD()
+     
         buildBMD()
-        # printBMD()
+      
         m_buckle = MFailBuck(1.27)
         m_tension = M_failMatT(30)  
         m_compression = M_failMatC(6)
         v_fails = V_fail(4)
         v_bucks = V_buck(520)
+
         for i in range(L-1):
             if abs(m_buckle[i]) < abs(bmd[i]):
                broken1 = True
@@ -622,24 +728,30 @@ def deflection(bmd):
     return deflection
 
 def graphs():
-        p=617
-        buildSFD(550, p)
-        arr = buildSFD(1250,p)
-        printSFD()
-        buildBMD()
-        # printBMD()        
-        m_buckle = MFailBuck(1.27)
-        m_tension = M_failMatT(30)  
-        m_compression = M_failMatC(6)
-        v_fails = V_fail(4)
-        v_bucks = V_buck(520)
-        # bmd_momentFails(m_compression, m_tension)
-        # bmd_momentBuckFail()
-        # sheerFailSFD(v_fails)
-        shearBuck(v_bucks)
+    """
+    function to generate nessisary graphs
+    """
+    p=617
+    buildSFD(550, p)
+    arr = buildSFD(1250,p)
+    printSFD()
+    buildBMD()
+    # printBMD()        
+    m_buckle = MFailBuck(1.27)
+    m_tension = M_failMatT(30)  
+    m_compression = M_failMatC(6)
+    v_fails = V_fail(4)
+    v_bucks = V_buck(520)
+    bmd_momentFails(m_compression, m_tension)
+    bmd_momentBuckFail()
+    sheerFailSFD(v_fails)
+    shearBuck(v_bucks)
 
 
 def bmd_momentFails(m_compression, m_tensions):
+    """
+    functon to graph the bmd vs material moment failures
+    """
     plt.title("BMD vs Material Moment Failures") 
     plt.xlabel("x (mm)") 
     plt.ylabel("bending moment (Nmm)") 
@@ -656,7 +768,10 @@ def bmd_momentFails(m_compression, m_tensions):
     plt.show()    
 
 def bmd_momentBuckFail():
-    plt.title("BMD vs Material Moment Failures") 
+    """
+    functon to graph the bmd vs material moment failures
+    """
+    plt.title("BMD vs Material Buckling Failures") 
     plt.xlabel("x (mm)") 
     plt.ylabel("bending moment (Nmm)") 
     zeroliney = [0, 0]
@@ -673,6 +788,9 @@ def bmd_momentBuckFail():
     plt.show()    
 
 def sheerFailSFD(shear):
+    """
+    function to graph SFD vs shear failures
+    """
     plt.title("SFD vs Material Shear Failures") 
     plt.xlabel("x (mm)") 
     plt.ylabel("shear force (N)") 
@@ -692,6 +810,9 @@ def sheerFailSFD(shear):
     plt.show()
     
 def shearBuck(buck):
+    """
+    functions to graph sfd vs shear buckling failure
+    """
     plt.title("SFD vs  Shear Buckling Failures") 
     plt.xlabel("x (mm)") 
     plt.ylabel("shear force (N)") 

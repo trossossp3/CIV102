@@ -19,6 +19,10 @@ support_x_right = 1075
 point_loads = []
 bmd = np.array([0.0]*L)
 
+sigmas1 = []
+sigmas2 = []
+sigmas3 = []
+
 def buildSFD(xP, P):
     global sfd
     global point_loads
@@ -65,9 +69,9 @@ def buildSFD(xP, P):
 
 
 def printSFD():
-    plt.title("Bridge SFD") 
+    plt.title("Bridge SFD for P=617N, Pfail = 617N") 
     plt.xlabel("x (mm)") 
-    plt.ylabel("shear force (kN)") 
+    plt.ylabel("shear force (N)") 
     arr = []
     for i in range(len(sfd)):
         arr.append(sfd[i][0])  
@@ -88,9 +92,9 @@ def buildBMD():
 
 
 def printBMD():
-    plt.title("Bridge BMD") 
+    plt.title("Bridge BMD from P=617, PFail = 617") 
     plt.xlabel("x (mm)") 
-    plt.ylabel("bending moment (kNm)") 
+    plt.ylabel("bending moment (Nmm)") 
     zeroliney = [0, 0]
     zerolinex = [0, L]
     plt.plot(zerolinex, zeroliney)
@@ -101,10 +105,10 @@ def printBMD():
 
 
 
-def ybar(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape):
+def ybar(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape, tabThickness):
     if(shape == 0):#shape = 0 during test bridge    
             area1 = widthtop * topthickness #top part of bridge
-            area2 = 10 * bottomthickness #tabs 10 is tab width
+            area2 = 5 * tabThickness #tabs 10 is tab width
             area3 = leftthickness * (height - topthickness)
             area4 = (widthbottom - 2*leftthickness) * bottomthickness
             d1 = (height-topthickness/2)
@@ -132,11 +136,11 @@ def I0(b, h):
     I0 = (b * h * h * h)/12
     return I0
 
-def second_moment_of_area(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape):
-    centroid = ybar(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape)
+def second_moment_of_area(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape, tabThickness):
+    centroid = ybar(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape, tabThickness)
     if shape == 0:
         area1 = widthtop * topthickness #top part of bridge
-        area2 = 10 * topthickness #tabs 10 is tab width
+        area2 = 5 * topthickness #tabs 10 is tab width
         area3 = leftthickness * (height - 2*topthickness)
         area4 = (widthbottom - 2*leftthickness) * bottomthickness
         d1L = (height-topthickness/2)
@@ -149,40 +153,17 @@ def second_moment_of_area(height, widthtop, widthbottom, topthickness, bottomthi
         d4C = d4L - centroid
 
         term1 = I0(widthtop, topthickness) + (area1 * (d1C)**2) #top
-        term2 = I0(10, topthickness) + area2 * (d2C)**2 #tabs
+        term2 = I0(5, tabThickness) + area2 * (d2C)**2 #tabs
         term3 = I0(leftthickness, height - 2*topthickness) + (area3 * (d3C)**2)
         term4 = I0(widthbottom - 2*leftthickness, bottomthickness) + (area4 * (d4C)**2)
         second_moment_of_area = term1 + 2* term2 + 2*term3 + term4
     return second_moment_of_area
 
-""""
-def first_moment_of_area(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape):
-    
-    centroid = ybar(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape)
-    
-    if 0 <= centroid < bottomthickness:
-        centroidlocation = "bottom"
-    elif bottomthickness <= centroid < height - topthickness:
-        centroidlocation = "middle"
-    elif height - topthickness <= centroid < height:
-        centroidlocation = "top"
 
-    if centroidlocation == "bottom":
-        Q = widthbottom * centroid * (centroid/2)
-    elif centroidlocation == "top":
-        Q = widthtop * (height - centroid) * ((height - centroid)/2)
-    elif centroidlocation == "middle":
-        term1 = widthbottom * bottomthickness * (centroid - (bottomthickness/2))
-        term2 = rightthickness * (centroid - bottomthickness) * ((centroid - bottomthickness)/2)
-        term3 = leftthickness * (centroid - bottomthickness) * ((centroid - bottomthickness)/2)
-        Q = term1 + term2 + term3
-    
-    return Q
-"""
 
-def first_moment_of_area(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape):
+def first_moment_of_area(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape, tabThickness):
     
-    centroid = ybar(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape)
+    centroid = ybar(height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape, tabThickness)
     
     if shape == 0:
         area1 = widthbottom*bottomthickness
@@ -204,13 +185,15 @@ def get_properties():
     widthTop = [100]*L
     widthBottom = [80]*L
     topThickness = [1.27*2]*L
-    #increases thickness
-    bottomThickness = [1.27]*L
-    rightThickness = [1.27]*L
-    leftThickness = [1.27]*L
-    shape = [0] * L
 
-    return  height, widthTop, widthBottom, topThickness, bottomThickness, rightThickness, leftThickness, shape
+    #increases thickness
+    bottomThickness = np.concatenate(([1.27]*520, [1.27*2]*50, [1.27]*570, [1.27*2]*(L-520-50-570)), axis = 0) #double bottom thickness between 545 - 555
+    rightThickness = np.concatenate(([1.27]*540, [1.27 * 2]*10, [1.27]*(L-540-10)), axis = 0) 
+    leftThickness = np.concatenate(([1.27]*540, [1.27 * 2]*10, [1.27]*(L-540-10)), axis = 0) 
+    # leftThickness = [1.27]*L
+    shape = [0] * L
+    tabThickness = [1.27]*L
+    return  height, widthTop, widthBottom, topThickness, bottomThickness, rightThickness, leftThickness, shape, tabThickness
    
 def y_top(y_bar, height):
     return y_bar - height
@@ -219,16 +202,16 @@ def geometric_properties():
     """
     returns I , y_bar, Q, yTop
     """
-    height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape= get_properties()
+    height, widthtop, widthbottom, topthickness, bottomthickness, rightthickness, leftthickness, shape, tabThickness= get_properties()
     y_bar = []
     I = []
     Q = []
     yTop = []
 
     for i in range(L):
-        y_bar.append(ybar(height[i], widthtop[i], widthbottom[i], topthickness[i], bottomthickness[i], rightthickness[i], leftthickness[i], shape[i]))
-        I.append(second_moment_of_area(height[i], widthtop[i], widthbottom[i], topthickness[i], bottomthickness[i], rightthickness[i], leftthickness[i], shape[i]))
-        Q.append(first_moment_of_area(height[i], widthtop[i], widthbottom[i], topthickness[i], bottomthickness[i], rightthickness[i], leftthickness[i], shape[i]))
+        y_bar.append(ybar(height[i], widthtop[i], widthbottom[i], topthickness[i], bottomthickness[i], rightthickness[i], leftthickness[i], shape[i], tabThickness[i]))
+        I.append(second_moment_of_area(height[i], widthtop[i], widthbottom[i], topthickness[i], bottomthickness[i], rightthickness[i], leftthickness[i], shape[i], tabThickness[i]))
+        Q.append(first_moment_of_area(height[i], widthtop[i], widthbottom[i], topthickness[i], bottomthickness[i], rightthickness[i], leftthickness[i], shape[i],tabThickness[i]))
         yTop.append(height[i]-y_bar[i])
     
 
@@ -396,6 +379,7 @@ def MFailBuck(t):
         M = sigma * I /Y
         b= width
     """
+    global sigmas1, sigmas2, sigmas3
     #needed to change depending on sectional properties
     I = geometric_properties()[0]
     y_bar = geometric_properties()[1]
@@ -412,13 +396,58 @@ def MFailBuck(t):
     sigma = 0
     moments = []
     shape = get_properties()[7]
-    for i in range(0, L):
+    for i in range(0, L-1):
         if shape[i] == 0: #the demo bridge
-            sigma1 = case1(i, topthickness[i], 80)
-            
-            # sigma1 = case1(i, t, 80)
-            sigma2 = case2(i, t,10)
-            sigma3 = case3(i, t, 32.02)
+            if(bmd[i] > 0):
+                sigma1 = case1(i, topthickness[i], 80)
+                n1 =  sigma1*I[i] / y_top[i]
+                n2 = sigma1*I[i] / y_bar[i] 
+                sigmas1.append(min(n1,n2))
+                # sigma1 = case1(i, t, 80)
+                sigma2 = case2(i, t,10)
+                
+                n1 =  sigma2*I[i] / y_top[i]
+                n2 = sigma2*I[i] / y_bar[i] 
+                sigmas2.append(min(n1,n2))
+                
+                sigma3 = case3(i, t, 32.02)
+                n1 =  sigma3*I[i] / y_top[i]
+                n2 = sigma3*I[i] / y_bar[i] 
+                sigmas3.append(min(n1,n2))
+            elif bmd[i]<0:
+                sigma1 = case1(i, topthickness[i], 80)
+                n1 =  -1* sigma1*I[i] / y_top[i]
+                n2 = -1* sigma1*I[i] / y_bar[i] 
+                sigmas1.append(min(n1,n2))
+                # sigma1 = case1(i, t, 80)
+                sigma2 = case2(i, t,10)
+                
+                n1 =  -1*sigma2*I[i] / y_top[i]
+                n2 = -1*sigma2*I[i] / y_bar[i] 
+                sigmas2.append(min(n1,n2))
+                
+                sigma3 = case3(i, t, 32.02)
+                n1 =  -1*sigma3*I[i] / y_top[i]
+                n2 = -1*sigma3*I[i] / y_bar[i] 
+                sigmas3.append(min(n1,n2))
+            else:
+                sigma1 = case1(i, topthickness[i], 80)
+                n1 =  -1* sigma1*I[i] / y_top[i]
+                n2 = -1* sigma1*I[i] / y_bar[i] 
+                sigmas1.append(0)
+                # sigma1 = case1(i, t, 80)
+                sigma2 = case2(i, t,10)
+                
+                n1 =  -1*sigma2*I[i] / y_top[i]
+                n2 = -1*sigma2*I[i] / y_bar[i] 
+                sigmas2.append(0)
+                
+                sigma3 = case3(i, t, 32.02)
+                n1 =  -1*sigma3*I[i] / y_top[i]
+                n2 = -1*sigma3*I[i] / y_bar[i] 
+                sigmas3.append(0)
+           
+          
             # print(i)
             sigma = min(sigma1, sigma2, sigma3)
             # take min of potential sigmas calculated like if a memeber uses both case1 and 2
@@ -459,7 +488,7 @@ def testFail():
     broken3 = False
     broken4 = False
     broken5 = False
-    p = 550
+    p = 600
     # while not broken1 or not broken2 or not broken3:
     while not broken1 and not broken2 and not broken3 and not broken4 and not broken5:
         buildSFD(550, p)
@@ -470,9 +499,10 @@ def testFail():
         with open('your_file.txt', 'w') as f:
             for item in arr:
                 f.write("%s\n" % item)
-        printSFD()
+        
         buildBMD()
-        printBMD()
+        # printSFD()
+        # printBMD()
         m_buckle = MFailBuck(1.27)
         m_tension = M_failMatT(30)  
         m_compression = M_failMatC(6)
@@ -527,10 +557,10 @@ def testFailTrain():
         buildSFD(633,p)
         buildSFD(797, p)
         arr =buildSFD(973,p)
-        print(arr[676])
-        with open('your_file.txt', 'w') as f:
-            for item in arr:
-                f.write("%s\n" % item)
+       
+        # with open('your_file.txt', 'w') as f:
+        #     for item in arr:
+        #         f.write("%s\n" % item)
         # printSFD()
         buildBMD()
         # printBMD()
@@ -591,7 +621,94 @@ def deflection(bmd):
     deflection = delta_c_a/L * (L/2) -delta_m_a
     return deflection
 
+def graphs():
+        p=617
+        buildSFD(550, p)
+        arr = buildSFD(1250,p)
+        printSFD()
+        buildBMD()
+        # printBMD()        
+        m_buckle = MFailBuck(1.27)
+        m_tension = M_failMatT(30)  
+        m_compression = M_failMatC(6)
+        v_fails = V_fail(4)
+        v_bucks = V_buck(520)
+        # bmd_momentFails(m_compression, m_tension)
+        # bmd_momentBuckFail()
+        # sheerFailSFD(v_fails)
+        shearBuck(v_bucks)
 
+
+def bmd_momentFails(m_compression, m_tensions):
+    plt.title("BMD vs Material Moment Failures") 
+    plt.xlabel("x (mm)") 
+    plt.ylabel("bending moment (Nmm)") 
+    zeroliney = [0, 0]
+    zerolinex = [0, L]
+    plt.plot(zerolinex, zeroliney)
+
+    # plt.plot(*zip(*sorted(buildBMD(xP, P))))
+    plt.gca().invert_yaxis()
+    plt.plot(bmd)
+    plt.plot(m_compression, label = "Matboard Compression Failure")
+    plt.plot(m_tensions, label = "Matboard Tension Failure")
+    plt.legend()
+    plt.show()    
+
+def bmd_momentBuckFail():
+    plt.title("BMD vs Material Moment Failures") 
+    plt.xlabel("x (mm)") 
+    plt.ylabel("bending moment (Nmm)") 
+    zeroliney = [0, 0]
+    zerolinex = [0, L]
+    plt.plot(zerolinex, zeroliney)
+
+    # plt.plot(*zip(*sorted(buildBMD(xP, P))))
+    plt.gca().invert_yaxis()
+    plt.plot(bmd)
+    plt.plot(sigmas1, label = "Mid Flange Buckling")
+    plt.plot(sigmas2, label = "Side flange buckling")
+    plt.plot(sigmas3, label = "Web compression buckling")
+    plt.legend()
+    plt.show()    
+
+def sheerFailSFD(shear):
+    plt.title("SFD vs Material Shear Failures") 
+    plt.xlabel("x (mm)") 
+    plt.ylabel("shear force (N)") 
+    arr = []
+    for i in range(len(sfd)):
+        arr.append(sfd[i][0])  
+    zeroliney = [0, 0]
+    zerolinex = [0, L]
+    plt.plot(zerolinex, zeroliney)
+    plt.plot(arr)
+    plt.plot(shear, label = "Matboard Shear Failrue", color = "b")
+    negative_shear = []
+    for i in shear:
+        negative_shear.append(i*-1)
+    plt.plot(negative_shear, color = "b")
+    plt.legend()
+    plt.show()
+    
+def shearBuck(buck):
+    plt.title("SFD vs  Shear Buckling Failures") 
+    plt.xlabel("x (mm)") 
+    plt.ylabel("shear force (N)") 
+    arr = []
+    for i in range(len(sfd)):
+        arr.append(sfd[i][0])  
+    zeroliney = [0, 0]
+    zerolinex = [0, L]
+    plt.plot(zerolinex, zeroliney)
+    plt.plot(arr)
+    plt.plot(buck, label = "Web Shear Buckle Failrue", color = "b")
+    negative_buck = []
+    for i in buck:
+        negative_buck.append(i*-1)
+    plt.plot(negative_buck, color = "b")
+    plt.legend()
+    plt.show()
 
 
 
@@ -601,6 +718,7 @@ if __name__ == "__main__":
     # buildBMD()
     # printBMD()
     # init()
-    testFail()
+    # testFail()
     # testFailTrain()
+    graphs()
 
